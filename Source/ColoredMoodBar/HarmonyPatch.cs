@@ -17,6 +17,7 @@ namespace MoodBarPatch {
         public static FieldInfo pawnTextureCameraOffsetField;
         public static FieldInfo deadColonistTexField;
         public static FieldInfo pawnLabelsCacheField;
+        public static FieldInfo moodTextureField;
 
         public static Texture2D extremeBreakTex;
         public static Texture2D majorBreakTex;
@@ -28,7 +29,7 @@ namespace MoodBarPatch {
         static Main() {
             var harmony = HarmonyInstance.Create("com.github.restive2k12.rimworld.mod.moodbar");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            drawSelectionOverlayOnGUIMethod = typeof(ColonistBarColonistDrawer).GetMethod("DrawSelectionOverlayOnGUI",
+            /*drawSelectionOverlayOnGUIMethod = typeof(ColonistBarColonistDrawer).GetMethod("DrawSelectionOverlayOnGUI",
                     BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Pawn), typeof(Rect) }, null);
             drawCaravanSelectionOverlayOnGUIMethod = typeof(ColonistBarColonistDrawer).GetMethod("DrawCaravanSelectionOverlayOnGUI",
                     BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Caravan), typeof(Rect) }, null);
@@ -42,7 +43,11 @@ namespace MoodBarPatch {
             deadColonistTexField = typeof(ColonistBarColonistDrawer).GetField("DeadColonistTex",
                     BindingFlags.Static | BindingFlags.NonPublic);
             pawnLabelsCacheField = typeof(ColonistBarColonistDrawer).GetField("pawnLabelsCache",
-                BindingFlags.Instance | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.NonPublic);*/
+
+            moodTextureField = typeof(ColonistBarColonistDrawer).GetField("MoodBGTex",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+
             float colorAlpha = 0.6f;
             Color red = Color.red;
             Color orange = new Color(1f, 0.5f, 0.31f, colorAlpha);
@@ -66,25 +71,31 @@ namespace MoodBarPatch {
         }
     }
 
-    [HarmonyPatch(typeof(ColonistBarColonistDrawer), "DrawColonist")]
-    public class MoodPatch {
-        private static float ApplyEntryInAnotherMapAlphaFactor(Map map, float alpha) {
-            //Unnecessary code?
-            /*if (map == null) {
-                if (!WorldRendererUtility.WorldRenderedNow) {
-                    alpha = Mathf.Min(alpha, 0.4f);
-                }
-            }
-            
-            else if (map != Find.VisibleMap || WorldRendererUtility.WorldRenderedNow) {
-                alpha = Mathf.Min(alpha, 0.4f);
-            }*/
+    [HarmonyPatch(typeof(ColonistBarColonistDrawer), "GetPawnTextureRect")]
+    public class GetPawnTextureRectPatch {
 
-            return alpha;// Mathf.Min(alpha, 0.4f); 
+        public static void Prefix(ColonistBarColonistDrawer __instance, ref Vector2 pos) {
+            pos += new Vector2(3f, 3f);
         }
 
-        public static bool Prefix(ColonistBarColonistDrawer __instance, ref Rect rect, ref Pawn colonist, ref Map pawnMap) {
-            ColonistBar colonistBar = Find.ColonistBar;
+    }
+
+    [HarmonyPatch(typeof(ColonistBarColonistDrawer), "DrawColonist")]
+    public class DrawColonistPatch {
+        
+        public static bool Prefix(ColonistBarColonistDrawer __instance, ref Rect rect, ref Pawn colonist, ref Texture2D ___MoodBGTex) {
+            Log.Message("tex value : " + ___MoodBGTex + " - " + Main.moodTextureField.GetValue(__instance));
+            rect = rect.ExpandedBy(3f);
+
+            //Traverse t = Traverse.Create(__instance);
+
+            //Log.Message("Traverse __instance is null" + (t == null));
+
+
+            //Traverse.Create(__instance).Field("MoodBGTex").SetValue(SolidColorMaterials.NewSolidColorTexture(Color.red));
+            ___MoodBGTex = SolidColorMaterials.NewSolidColorTexture(Color.red);
+            return true;
+            /*ColonistBar colonistBar = Find.ColonistBar;
             float entryRectAlpha = colonistBar.GetEntryRectAlpha(rect);
             entryRectAlpha = ApplyEntryInAnotherMapAlphaFactor(pawnMap, entryRectAlpha);
 
@@ -189,7 +200,7 @@ namespace MoodBarPatch {
             Text.Font = GameFont.Small;
             GUI.color = Color.white;
 
-            return false;
+            return false;*/
         }
     }
 }
