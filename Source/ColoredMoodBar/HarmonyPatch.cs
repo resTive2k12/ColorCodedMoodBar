@@ -18,6 +18,7 @@ namespace MoodBarPatch {
         public static FieldInfo deadColonistTexField;
         public static FieldInfo pawnLabelsCacheField;
 
+        public static Texture2D whiteTex;
         public static Texture2D extremeBreakTex;
         public static Texture2D majorBreakTex;
         public static Texture2D minorBreakTex;
@@ -45,14 +46,17 @@ namespace MoodBarPatch {
             pawnLabelsCacheField = typeof(ColonistBarColonistDrawer).GetField("pawnLabelsCache",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             float colorAlpha = 0.6f;
+            Color white = Color.white;
             Color red = Color.red;
             Color orange = new Color(1f, 0.5f, 0.31f, colorAlpha);
             Color yellow = Color.yellow;
             Color neutralColor = new Color(0.77f, 0.96f, 0.69f, colorAlpha);
             Color cyan = Color.cyan;
             Color happyColor = new Color(0.1f, 0.75f, 0.2f, colorAlpha);
+            white.a = 1f;
             red.a = orange.a = yellow.a = cyan.a = colorAlpha;
 
+            whiteTex = SolidColorMaterials.NewSolidColorTexture(white);
             extremeBreakTex = SolidColorMaterials.NewSolidColorTexture(red);
             majorBreakTex = SolidColorMaterials.NewSolidColorTexture(orange);
             minorBreakTex = SolidColorMaterials.NewSolidColorTexture(yellow);
@@ -97,13 +101,18 @@ namespace MoodBarPatch {
             }
             Color color = new Color(1f, 1f, 1f, alpha);
             GUI.color = color;
-            GUI.DrawTexture(rect, ColonistBar.BGTex);
+            GUI.DrawTexture(pawnBackgroundSize, ColonistBar.BGTex);
             if (colonist.needs != null && colonist.needs.mood != null) {
                 Rect position = pawnBackgroundSize.ContractedBy(2f);
+                Rect instantLevel = new Rect(
+                    pawnBackgroundSize.x, 
+                    position.yMax - ((position.height + 1f) * colonist.needs.mood.CurInstantLevelPercentage),
+                    pawnBackgroundSize.width, 
+                    1f
+                );
                 float value = position.height * colonist.needs.mood.CurLevelPercentage;
                 position.yMin = position.yMax - value;
                 position.height = value;
-
 
                 float statValue = colonist.GetStatValue(StatDefOf.MentalBreakThreshold, true);
 
@@ -136,6 +145,9 @@ namespace MoodBarPatch {
                     GUI.DrawTexture(position, Main.happyTex);
                 }
 
+                // Always show where the mood is going in white.
+                GUI.DrawTexture(instantLevel, Main.whiteTex);
+
             }
             if (highlight) {
                 int thickness = (rect.width > 22f) ? 3 : 2;
@@ -159,7 +171,7 @@ namespace MoodBarPatch {
                 GUI.DrawTexture(rect, (Texture)Main.deadColonistTexField.GetValue(__instance));
             }
             float num3 = 4f * colonistBar.Scale;
-            Vector2 pos = new Vector2(rect.center.x, rect.yMax - num3);
+            Vector2 pos = new Vector2(rect.center.x, rect.yMax + num3);
             GenMapUI.DrawPawnLabel(colonist, pos, alpha, rect.width + colonistBar.SpaceBetweenColonistsHorizontal - 2f, (Dictionary<string, string>)Main.pawnLabelsCacheField.GetValue(__instance), GameFont.Tiny, true, true);
             Text.Font = GameFont.Small;
             GUI.color = Color.white;
